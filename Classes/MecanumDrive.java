@@ -1,66 +1,69 @@
 package org.firstinspires.ftc.teamcode;
 
-import androidx.annotation.NonNull;
-
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 
-public class MecanumDrive {
 
-    private DcMotor motorBL;
-    private DcMotor motorFL;
-    private DcMotor motorBR;
-    private DcMotor motorFR;
+@TeleOp(name="Binary Bots Mecanum Drive", group="Linear Opmode")
 
-    private double blPower;
-    private double flPower;
-    private double brPower;
-    private double frPower;
+public class MecanumDrive extends LinearOpMode {
 
-    public MecanumDrive(
-            DcMotor BL,
-            DcMotor FL,
-            DcMotor BR,
-            DcMotor FR
-    ) {
-        motorBL = BL;
-        motorFL = FL;
-        motorBR = BR;
-        motorFR = FR;
+    // Declare OpMode members.
+    private ElapsedTime runtime = new ElapsedTime();
+    private DcMotor mFL = null;
+    private DcMotor mFR = null;
+    private DcMotor mBL = null;
+    private DcMotor mBR = null;
 
-        motorFL.setDirection(DcMotorSimple.Direction.REVERSE);
-        motorBL.setDirection(DcMotorSimple.Direction.REVERSE);
+    @Override
+    public void runOpMode() {
+        telemetry.addData("Status", "Initialized");
+        telemetry.update();
 
-        motorBL.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        motorFL.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        motorBR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        motorFR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        // Initialize the hardware variables.
+        mFL  = hardwareMap.get(DcMotor.class, "motorFL");
+        mFR = hardwareMap.get(DcMotor.class, "motorFR");
+        mBL = hardwareMap.get(DcMotor.class, "motorBL");
+        mBR = hardwareMap.get(DcMotor.class, "motorBR");
+        
 
-    };
+        // Most robots need the motor on one side to be reversed to drive forward
+        // Reverse the motor that runs backwards when connected directly to the battery
+        mFL.setDirection(DcMotor.Direction.REVERSE);
+        mFR.setDirection(DcMotor.Direction.FORWARD);
 
-    /**
-     * Moves the robot
-     *
-     * @param x Magnitude to strafe
-     * @param y Magnitude to move
-     * @param theta Magnitude to turn
-     */
-    public void move(double x, double y, double theta) {
+       mBL.setDirection(DcMotor.Direction.FORWARD);
 
-        blPower = -x -y + theta * 1.5;
-        flPower = x -y + theta * 1.5;
-        brPower = x -y - theta * 1.5;
-        frPower = -x -y - theta * 1.5;
 
-        double coefficient = Math.max(Math.max(blPower, flPower), Math.max(brPower, frPower));
-        coefficient = Math.max(1.0, Math.abs(coefficient));
+        mBR.setDirection(DcMotor.Direction.FORWARD);
 
-        motorBL.setPower(blPower / coefficient);
-        motorFL.setPower(flPower / coefficient);
-        motorBR.setPower(brPower / coefficient);
-        motorFR.setPower(frPower / coefficient);
+        // Wait for the game to start (driver presses PLAY)
+        waitForStart();
+        runtime.reset();
 
+        // run until the end of the match (driver presses STOP)
+        while (opModeIsActive()) {
+            
+            //Getting Controller Input
+
+            double forwardPower = gamepad1.left_stick_y;
+            double strafePower = gamepad1.left_stick_x;
+            double turnPower = gamepad1.right_stick_x;
+            
+            //Setting Motor Powers
+            mFL.setPower(forwardPower - turnPower - strafePower);
+            mFR.setPower(forwardPower + turnPower + strafePower); 
+            mBL.setPower(forwardPower - turnPower + strafePower);
+            mBR.setPower(forwardPower + turnPower - strafePower);
+            
+            // Show the elapsed game time and wheel power.
+            telemetry.addData("Status", "Run Time: " + runtime.toString());
+            telemetry.update();
+        }
     }
 }
